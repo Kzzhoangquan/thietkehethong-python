@@ -1,0 +1,5 @@
+data/
+kinetics-i3d/
+custom_timesformer/
+*.mp4
+*.avi
