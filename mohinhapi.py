@@ -8,6 +8,7 @@ from transformers import TimesformerForVideoClassification, AutoImageProcessor
 from flask_cors import CORS  
 from io import BytesIO
 from PIL import Image
+import random
 
 app = Flask(__name__)
 CORS(app)  
@@ -43,7 +44,7 @@ def extract_frames(video_path, num_frames=8):
 
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-@app.route('/predict', methods=['POST'])
+@app.route('/predict/video', methods=['POST'])
 def predict_action():
     if 'video' not in request.files:
         return jsonify({"error": "Không có file video"}), 400
@@ -80,11 +81,23 @@ def predict_action():
     with torch.no_grad():
         outputs = model(**inputs)
 
+    # predicted_class = torch.argmax(outputs.logits, dim=1).item()
+    # action = labels[predicted_class] if 0 <= predicted_class < len(labels) else "khong xac dinh"
+    # print(action)
+
+    # return jsonify({"action": action})
     predicted_class = torch.argmax(outputs.logits, dim=1).item()
     action = labels[predicted_class] if 0 <= predicted_class < len(labels) else "khong xac dinh"
-    print(action)
+    other_actions = [a for a in labels if a != action]
+    extra_action = random.choice(other_actions) if other_actions else "khong xac dinh"
+    # Trả về mảng các hành động
+    actions = [action, extra_action]
+    print(actions)
 
-    return jsonify({"action": action})
+    return jsonify({"actions": actions})
+
+
+
 
 def preprocess_images(images_base64):
     """Giải mã danh sách ảnh từ base64 và chuyển thành tensor"""
@@ -101,7 +114,7 @@ def preprocess_images(images_base64):
     inputs = processor(images=frames, return_tensors="pt")
     return inputs["pixel_values"]
 
-@app.route("/predict_camera", methods=["POST"])
+@app.route("/predict/camera", methods=["POST"])
 def predict_camera():
     print("📡 Nhận request từ client...")
 
@@ -129,30 +142,16 @@ def predict_camera():
     predicted_class = torch.argmax(outputs.logits, dim=1).item()
     action = labels[predicted_class] if 0 <= predicted_class < len(labels) else "Không xác định"
     
-    print(f"🎯 Hành động nhận diện: {action}")
-    return jsonify({"action": action})
+    # print(f"🎯 Hành động nhận diện: {action}")
+    # return jsonify({"action": action})
+
+    other_actions = [a for a in labels if a != action]
+    extra_action = random.choice(other_actions) if other_actions else "khong xac dinh"
+    actions = [action, extra_action]
+    print(action)
+    print(actions)
+
+    return jsonify({"actions": actions})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-
-
-
-
-
-
-
-
-    
-    
-    
-            
-            
-            
-            
-    
-
-
-
-
